@@ -4,6 +4,16 @@ AI言語モデル（LLM）をゲームマスターとして使用する日本の
 
 ![桜創大学テーブルトーク](https://github.com/orimizu/ousou-univ-trpg/blob/main/img/OusouUniversityTRPG.jpg)
 
+上記画像は、イメージです。現状、画像は表示されません。
+
+### 開始画面
+
+![桜創大学テーブルトーク 開始画面](https://github.com/orimizu/ousou-univ-trpg/blob/main/img/OusouUniversityTRPG-Start.png)
+
+### ゲーム中の画面
+
+![桜創大学テーブルトーク ゲーム画面](https://github.com/orimizu/ousou-univ-trpg/blob/main/img/OusouUniversityTRPG-Play.png)
+
 ## 機能
 
 - 🎮 AIがゲームマスターを担当するテーブルトークRPG

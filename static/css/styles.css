@@ -182,7 +182,15 @@ h3 {
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: 600px;
+    height: 1200px;
+}
+
+/* より柔軟なレスポンシブサイズ設定（オプション） */
+@media (max-height: 1300px) {
+    .chat-container {
+        height: 80vh; /* ビューポート高さの80%に設定（画面が小さい場合） */
+        min-height: 600px; /* 最小高さは確保 */
+    }
 }
 
 .chat-messages {
