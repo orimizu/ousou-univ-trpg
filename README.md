@@ -100,7 +100,7 @@ ollama pull llama3
 ### 2. アプリケーションの起動
 
 ```bash
-python app.py
+python ousou-univ-trpg.py
 ```
 
 ### 3. ブラウザでアクセス
