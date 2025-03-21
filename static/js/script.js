@@ -329,8 +329,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = playerInputField.value.trim();
         if (!message || gameState.loading) return;
 
+        // 正規表現を使用して末尾の空白や改行を徹底的に削除
+        const trimmedMessage = message.replace(/[\s\n\r]+$/g, '');
+
         // Add player message to chat
-        addPlayerMessage(message);
+        addPlayerMessage(trimmedMessage);
         
         // Disable input while waiting for response
         gameState.loading = true;
@@ -339,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playerInputField.value = '';
 
         // Request response from server/LLM
-        requestGameMasterResponse(message)
+        requestGameMasterResponse(trimmedMessage)
             .then(response => {
                 // Add GM response to chat
                 addGameMasterMessage(response);
@@ -365,7 +368,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function addPlayerMessage(text) {
         const messageElement = document.createElement('div');
         messageElement.className = 'message player-message';
-        messageElement.textContent = text;
+        
+        // プレイヤーメッセージもマークダウン対応
+        const markdownContent = document.createElement('div');
+        markdownContent.className = 'markdown-content player-markdown-content';
+        
+        // テキストをMarkdownとしてパースしてHTMLに変換
+        marked.setOptions({
+            sanitize: false,  // HTMLタグを許可
+            breaks: true      // 改行をそのまま改行として扱う
+        });
+        
+        markdownContent.innerHTML = marked.parse(text);
+        
+        // メッセージ要素にMarkdownコンテンツを追加
+        messageElement.appendChild(markdownContent);
         
         chatMessagesContainer.appendChild(messageElement);
         scrollToBottom();
@@ -381,8 +398,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageElement = document.createElement('div');
         messageElement.className = 'message gamemaster-message';
         
-        // Replace newlines with <br> tags
-        messageElement.innerHTML = text.replace(/\n/g, '<br>');
+        // Markdownをレンダリングするためのコンテナを作成
+        const markdownContent = document.createElement('div');
+        markdownContent.className = 'markdown-content';
+        
+        // テキストをMarkdownとしてパースしてHTMLに変換
+        // marked.jsを使用（HTMLタグをエスケープしないオプションを設定）
+        marked.setOptions({
+            sanitize: false,  // HTMLタグを許可
+            breaks: true      // 改行をそのまま改行として扱う
+        });
+        
+        // HTMLタグを含む可能性のあるGameMasterタグ内のテキストを処理
+        // <GameMaster>タグなどはすでにサーバー側で除去されているはず
+        markdownContent.innerHTML = marked.parse(text);
+        
+        // メッセージ要素にMarkdownコンテンツを追加
+        messageElement.appendChild(markdownContent);
         
         chatMessagesContainer.appendChild(messageElement);
         scrollToBottom();
@@ -678,12 +710,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (message.speaker === 'player') {
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message player-message';
-                messageElement.textContent = message.text;
+                
+                // プレイヤーメッセージもマークダウン対応
+                const markdownContent = document.createElement('div');
+                markdownContent.className = 'markdown-content player-markdown-content';
+                
+                // テキストをMarkdownとしてパースしてHTMLに変換
+                marked.setOptions({
+                    sanitize: false,
+                    breaks: true
+                });
+                
+                markdownContent.innerHTML = marked.parse(message.text);
+                
+                // メッセージ要素にMarkdownコンテンツを追加
+                messageElement.appendChild(markdownContent);
+                
                 chatMessagesContainer.appendChild(messageElement);
             } else {
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message gamemaster-message';
-                messageElement.innerHTML = message.text.replace(/\n/g, '<br>');
+                
+                // Markdownをレンダリングするためのコンテナを作成
+                const markdownContent = document.createElement('div');
+                markdownContent.className = 'markdown-content';
+                
+                // テキストをMarkdownとしてパースしてHTMLに変換
+                marked.setOptions({
+                    sanitize: false,
+                    breaks: true
+                });
+                markdownContent.innerHTML = marked.parse(message.text);
+                
+                // メッセージ要素にMarkdownコンテンツを追加
+                messageElement.appendChild(markdownContent);
+                
                 chatMessagesContainer.appendChild(messageElement);
             }
         });

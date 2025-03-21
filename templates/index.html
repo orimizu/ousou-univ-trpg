@@ -5,6 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>桜創大学テーブルトーク</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Markdownコンテンツのスタイル */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+            color: #4ea1d3;
+        }
+        .markdown-content h1 {
+            font-size: 1.8em;
+            border-bottom: 2px solid #e85a71;
+            padding-bottom: 0.3em;
+        }
+        .markdown-content h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #e85a71;
+            padding-bottom: 0.2em;
+        }
+        .markdown-content h3 {
+            font-size: 1.2em;
+        }
+        .markdown-content p {
+            margin-bottom: 1em;
+        }
+        .markdown-content ul, .markdown-content ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        .markdown-content code {
+            background-color: #f0f0f0;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .markdown-content pre {
+            background-color: #f0f0f0;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid #e85a71;
+            padding-left: 1em;
+            margin-left: 0;
+            color: #666;
+        }
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1em;
+        }
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .markdown-content th {
+            background-color: #f2f2f2;
+        }
+        .markdown-content tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        /* プレイヤーメッセージ用Markdownスタイル */
+        .player-markdown-content {
+            color: white;
+        }
+
+        .player-markdown-content h1, 
+        .player-markdown-content h2, 
+        .player-markdown-content h3 {
+            color: white;
+        }
+
+        .player-markdown-content h1 {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .player-markdown-content h2 {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .player-markdown-content code {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .player-markdown-content pre {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .player-markdown-content blockquote {
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .player-markdown-content table {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .player-markdown-content th, 
+        .player-markdown-content td {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .player-markdown-content th {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .player-markdown-content tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .player-markdown-content a {
+            color: #fff;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
