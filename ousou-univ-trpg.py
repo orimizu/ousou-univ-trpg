@@ -109,7 +109,8 @@ def game_response():
     
     return jsonify({
         "gameMasterResponse": extracted_data["text"],
-        "statsUpdate": extracted_data["stats_update"]
+        "statsUpdate": extracted_data["stats_update"],
+        "options": extracted_data["options"]
     })
 
 # 新しいエンドポイント: ゲームデータのエクスポート
@@ -164,7 +165,7 @@ def create_prompt(player_name, department, stats, player_message, conversation):
     hobbies = stats.get('hobbies', 1)
     romance = stats.get('romance', 1)
     future = stats.get('future', 1)
-    
+
     # Base story content
     base_story = """# 「キャンパスライフ：新たな一歩」
 
@@ -174,6 +175,8 @@ def create_prompt(player_name, department, stats, player_message, conversation):
 **時期**: 4月初旬、新学期が始まったばかり。桜が満開の季節。
 
 **ゲームの目的**: プレイヤーは主人公となり、大学生活を通じて「学業」「友情」「趣味・特技」「恋愛」「将来への展望」の5つのステータスを高めていく。バランス良く成長するか、特定の分野に特化するかはプレイヤー次第。
+
+**ステータスシステム**: 各ステータスは1?15の整数値で表現される。1が最も低く、15が最も高い値を示す。
 
 **ゲームの流れ**: 
 1. 各ターンは1週間を表す
@@ -214,7 +217,7 @@ def create_prompt(player_name, department, stats, player_message, conversation):
         romance=romance,
         future=future
     )
-    
+
     # Initial setup for the prompt
     prompt = f"""<Description>
 あなたはゲームマスターです。
@@ -241,19 +244,19 @@ def create_prompt(player_name, department, stats, player_message, conversation):
 
 さあ、あなたはどんな大学生活を送りたいですか？まずは自己紹介から始めましょうか。あなたの名前、選んだ学部、そして大学生活で特に力を入れたいことを教えてください。
 </GameMaster>"""
-    
+
     prompt += first_gm_message
-    
+
     # Add conversation history
     for message in conversation:
         if message['speaker'] == 'player':
             prompt += f"\n\n<PC name=\"{player_name}\">\n{message['text']}\n</PC>"
         else:
             prompt += f"\n\n<GameMaster>\n{message['text']}\n</GameMaster>"
-    
+
     # Add the latest player message
     prompt += f"\n\n<PC name=\"{player_name}\">\n{player_message}\n</PC>"
-    
+
     # Final instructions - ステータス更新の指示を追加
     prompt += f"""
 
@@ -265,6 +268,8 @@ def create_prompt(player_name, department, stats, player_message, conversation):
 今、プレイヤーが、PCとして発言したところまでシナリオが進んでいます。
 この続きをゲームマスターとして、管理してください。
 なお、ゲームマスターとしての発言は、すべて<GameMaster></GameMaster>タグの中で発言するようにお願いします。
+
+ステータスシステムは1～15の範囲です。1が最も低く、15が最高の値です。
 もしも、ステータスを更新した場合は、以下のように、<stats></stats>タグの中に、jsonの辞書形式で更新後のステータスの値を記載してください。
 <stats>
 {{
@@ -275,8 +280,17 @@ def create_prompt(player_name, department, stats, player_message, conversation):
     "future": {future}
 }}
 </stats>
+
+プレイヤーに選択肢を提示したい場合は、<GameMaster></GameMaster>タグの外（後）に、<options></options>タグを使用して選択肢を提示してください。
+各選択肢は<option></option>タグで囲み、それぞれ一行に一つの選択肢を記述してください。
+例:
+<options>
+<option>授業に集中して勉強する</option>
+<option>サークル活動に参加してみる</option>
+<option>新しい友達を作るために学食で交流する</option>
+</options>
 </Description>"""
-    
+
     return prompt
 
 def get_ollama_response(prompt, model=None):
@@ -334,7 +348,7 @@ def get_claude_response(prompt):
             
             payload = {
                 "model": "claude-3-7-sonnet-20250219",
-                "max_tokens": 4000,
+                "max_tokens": 2000,
                 "messages": [
                     {
                         "role": "user",
@@ -380,7 +394,7 @@ def get_claude_response(prompt):
             
             payload = {
                 "model": "claude-3-7-sonnet-20250219",
-                "max_tokens": 4000,
+                "max_tokens": 2000,
                 "messages": [
                     {
                         "role": "user",
@@ -409,32 +423,52 @@ def extract_game_master_response(response):
     # Try to extract content between <GameMaster> and </GameMaster> tags
     pattern = r'<GameMaster>(.*?)</GameMaster>'
     matches = re.findall(pattern, response, re.DOTALL)
-    
+
     # Try to extract stats between <stats> and </stats> tags
     stats_pattern = r'<stats>\s*(\{.*?\})\s*</stats>'
     stats_matches = re.findall(stats_pattern, response, re.DOTALL)
-    
+
+    # Try to extract options between <options> and </options> tags
+    options_pattern = r'<options>(.*?)</options>'
+    options_matches = re.findall(options_pattern, response, re.DOTALL)
+
+    # Try to extract individual options
+    option_list = []
+    if options_matches:
+        option_pattern = r'<option>(.*?)</option>'
+        option_matches = re.findall(option_pattern, options_matches[-1], re.DOTALL)
+        option_list = [option.strip() for option in option_matches]
+
     stats_update = None
     if stats_matches:
         try:
             # 最後のstatsタグを使用
             stats_json = stats_matches[-1].strip()
-            stats_update = json.loads(stats_json)
-            print(f"Extracted stats update: {stats_update}")
+            raw_stats_update = json.loads(stats_json)
+
+            # ステータス値を1?15の範囲に制限 (最大値を15に変更)
+            stats_update = {}
+            for stat, value in raw_stats_update.items():
+                stats_update[stat] = max(1, min(15, value))
+
+            print(f"Extracted raw stats update: {raw_stats_update}")
+            print(f"Adjusted stats update: {stats_update}")
         except json.JSONDecodeError as e:
             print(f"Error parsing stats JSON: {e}")
-    
+
     if matches:
         # Return the last match (most recent GM response)
         return {
             "text": matches[-1].strip(),
-            "stats_update": stats_update
+            "stats_update": stats_update,
+            "options": option_list
         }
     else:
         # If no tags found, return a fallback message
         return {
             "text": "ゲームマスターからの応答を解析できませんでした。もう一度お試しください。",
-            "stats_update": None
+            "stats_update": None,
+            "options": []
         }
 
 if __name__ == '__main__':

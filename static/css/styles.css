@@ -261,6 +261,70 @@ h3 {
     cursor: not-allowed;
 }
 
+/* 選択肢ペインのスタイル */
+.options-container {
+    margin: 10px 0;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    border-left: 4px solid #e85a71;
+}
+
+.options-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #4ea1d3;
+    font-size: 1.1rem;
+}
+
+.options-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.option-button {
+    padding: 10px 15px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.option-button:hover {
+    background-color: #e85a71;
+    color: white;
+    border-color: #c2374a;
+}
+
+/* 選択肢メッセージのスタイル */
+.options-message {
+    align-self: center;
+    background-color: rgba(245, 245, 245, 0.9);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    width: 90%;
+}
+
+.options-message-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #4ea1d3;
+}
+
+.options-list {
+    list-style-type: disc;
+    margin-left: 20px;
+}
+
+.options-list li {
+    margin-bottom: 5px;
+}
+
 /* セーブ/ロード関連スタイル */
 .save-load-container {
     display: flex;
@@ -532,5 +596,13 @@ footer {
     
     .api-key-input-container {
         width: 100%;
+    }
+    
+    .options-container {
+        padding: 10px;
+    }
+    
+    .option-button {
+        padding: 8px 12px;
     }
 }

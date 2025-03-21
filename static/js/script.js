@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeyContainer = document.getElementById('api-key-container');
     const googleApiKeyInput = document.getElementById('google-api-key');
     const toggleKeyVisibilityBtn = document.getElementById('toggle-key-visibility');
+    const optionsContainer = document.getElementById('options-container');
+    const optionsButtonsContainer = document.getElementById('options-buttons');
     
     // セーブ/ロード要素
     const exportGameButton = document.getElementById('export-game');
@@ -316,6 +318,98 @@ document.addEventListener('DOMContentLoaded', () => {
         playerInputField.focus();
     });
 
+    // 選択肢ボタンの処理を追加するための新しい関数
+    function displayOptions(options) {
+        // 選択肢がない場合は何もしない
+        if (!options || options.length === 0) {
+            optionsContainer.classList.add('hidden');
+            return;
+        }
+        
+        // 既存の選択肢をクリア
+        optionsButtonsContainer.innerHTML = '';
+        
+        // 各選択肢に対してボタンを作成
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.className = 'option-button';
+            button.textContent = option;
+            
+            // クリックイベントを追加
+            button.addEventListener('click', () => {
+                // 選択肢をプレイヤーメッセージとして送信
+                addPlayerMessage(option);
+                
+                // 選択肢ペインを非表示
+                optionsContainer.classList.add('hidden');
+                
+                // 他の入力を無効化
+                gameState.loading = true;
+                playerInputField.disabled = true;
+                sendMessageButton.disabled = true;
+                
+                // ゲームマスターに送信
+                requestGameMasterResponse(option)
+                    .then(response => {
+                        // レスポンスがオブジェクトか文字列かをチェック
+                        if (typeof response === 'object' && response.text) {
+                            // オブジェクトの場合は text と options を取り出す
+                            addGameMasterMessage(response.text, response.options);
+                        } else {
+                            // 文字列の場合はそのまま使用
+                            addGameMasterMessage(response);
+                        }
+                        
+                        // 入力を再度有効化
+                        gameState.loading = false;
+                        playerInputField.disabled = false;
+                        sendMessageButton.disabled = false;
+                        playerInputField.focus();
+                    })
+                    .catch(error => {
+                        console.error('Error getting GM response:', error);
+                        addGameMasterMessage('申し訳ありません、エラーが発生しました。もう一度お試しください。');
+                        
+                        // 入力を再度有効化
+                        gameState.loading = false;
+                        playerInputField.disabled = false;
+                        sendMessageButton.disabled = false;
+                        playerInputField.focus();
+                    });
+            });
+            
+            optionsButtonsContainer.appendChild(button);
+        });
+        
+        // 選択肢ペインを表示
+        optionsContainer.classList.remove('hidden');
+    }
+
+    // もし選択肢を作成する別のイベント関数が必要であれば追加
+    function createOptionsMessage(options) {
+        if (!options || options.length === 0) return null;
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message options-message';
+        
+        const header = document.createElement('div');
+        header.className = 'options-message-header';
+        header.textContent = '選択肢:';
+        messageElement.appendChild(header);
+        
+        const list = document.createElement('ul');
+        list.className = 'options-list';
+        
+        options.forEach(option => {
+            const listItem = document.createElement('li');
+            listItem.textContent = option;
+            list.appendChild(listItem);
+        });
+        
+        messageElement.appendChild(list);
+        return messageElement;
+    }
+
     // Chat Functionality
     sendMessageButton.addEventListener('click', sendPlayerMessage);
     playerInputField.addEventListener('keypress', (e) => {
@@ -331,7 +425,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 正規表現を使用して末尾の空白や改行を徹底的に削除
         const trimmedMessage = message.replace(/[\s\n\r]+$/g, '');
-
+        
+        // 選択肢ペインを非表示
+        optionsContainer.classList.add('hidden');
+        
         // Add player message to chat
         addPlayerMessage(trimmedMessage);
         
@@ -344,8 +441,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Request response from server/LLM
         requestGameMasterResponse(trimmedMessage)
             .then(response => {
-                // Add GM response to chat
-                addGameMasterMessage(response);
+                // レスポンスがオブジェクトか文字列かをチェック
+                if (typeof response === 'object' && response.text) {
+                    // オブジェクトの場合は text と options を取り出す
+                    addGameMasterMessage(response.text, response.options);
+                } else {
+                    // 文字列の場合はそのまま使用
+                    addGameMasterMessage(response);
+                }
                 
                 // Re-enable input
                 gameState.loading = false;
@@ -394,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function addGameMasterMessage(text) {
+    function addGameMasterMessage(text, options = []) {
         const messageElement = document.createElement('div');
         messageElement.className = 'message gamemaster-message';
         
@@ -417,12 +520,22 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.appendChild(markdownContent);
         
         chatMessagesContainer.appendChild(messageElement);
+        
+        // 選択肢がある場合は、選択肢メッセージも追加
+        if (options && options.length > 0) {
+            const optionsMsg = createOptionsMessage(options);
+            if (optionsMsg) {
+                chatMessagesContainer.appendChild(optionsMsg);
+            }
+        }
+        
         scrollToBottom();
         
-        // Add to game state
+        // Add to game state with options
         gameState.conversation.push({
             speaker: 'gamemaster',
-            text: text
+            text: text,
+            options: options || []
         });
     }
 
@@ -473,7 +586,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 updatePlayerStats(data.statsUpdate);
             }
             
-            return data.gameMasterResponse;
+            // 選択肢がある場合は表示して、レスポンスにも含める
+            if (data.options && data.options.length > 0) {
+                displayOptions(data.options);
+                
+                // 選択肢つきのレスポンスオブジェクトを返す
+                return { 
+                    text: data.gameMasterResponse, 
+                    options: data.options 
+                };
+            } else {
+                // 選択肢ペインを非表示
+                optionsContainer.classList.add('hidden');
+                
+                // 通常のテキストのみ返す
+                return data.gameMasterResponse;
+            }
         } catch (error) {
             console.error('Error in API request:', error);
             throw error;
@@ -483,22 +611,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // ステータス更新処理
     function updatePlayerStats(statsUpdate) {
         console.log('Updating player stats:', statsUpdate);
-        
+
         // 各ステータスを更新
         Object.keys(statsUpdate).forEach(stat => {
             if (gameState.stats.hasOwnProperty(stat)) {
                 // 値を1〜5の範囲に制限
-                const newValue = Math.max(1, Math.min(5, statsUpdate[stat]));
+                const newValue = Math.max(1, Math.min(15, statsUpdate[stat]));
                 gameState.stats[stat] = newValue;
             }
         });
-        
+
         // 残りポイントを再計算
         gameState.remainingPoints = 12 - Object.values(gameState.stats).reduce((sum, value) => sum + value, 0);
-        
+
         // UIを更新
         updateStatsDisplay();
-        
+
         // ステータス変更通知
         displayStatsChangeNotification();
     }
@@ -746,8 +874,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 messageElement.appendChild(markdownContent);
                 
                 chatMessagesContainer.appendChild(messageElement);
+                
+                // 選択肢メッセージがある場合は追加
+                if (message.options && message.options.length > 0) {
+                    const optionsMsg = createOptionsMessage(message.options);
+                    if (optionsMsg) {
+                        chatMessagesContainer.appendChild(optionsMsg);
+                    }
+                }
             }
         });
+        
+        // 会話履歴の最後のメッセージを確認
+        const lastMessage = gameState.conversation[gameState.conversation.length - 1];
+        if (lastMessage && lastMessage.options && lastMessage.options.length > 0) {
+            // インポートされたデータに選択肢が含まれていれば表示
+            displayOptions(lastMessage.options);
+        } else {
+            optionsContainer.classList.add('hidden');
+        }
         
         // スクロールを一番下に移動
         scrollToBottom();

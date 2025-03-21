@@ -123,6 +123,56 @@
             color: #fff;
             text-decoration: underline;
         }
+        
+        /* 選択肢ペインのスタイル */
+        .options-container {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            border-left: 4px solid #e85a71;
+        }
+        
+        .options-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4ea1d3;
+            font-size: 1.1rem;
+        }
+        
+        .options-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .option-button {
+            padding: 10px 15px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .option-button:hover {
+            background-color: #e85a71;
+            color: white;
+            border-color: #c2374a;
+        }
+        
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+            .options-container {
+                padding: 10px;
+            }
+            
+            .option-button {
+                padding: 8px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -266,6 +316,13 @@
         <section id="conversation" class="game-pane hidden">
             <div class="chat-container">
                 <div id="chat-messages" class="chat-messages"></div>
+                
+                <!-- 選択肢ペイン（初期状態では非表示） -->
+                <div id="options-container" class="options-container hidden">
+                    <div class="options-header">選択肢</div>
+                    <div id="options-buttons" class="options-buttons"></div>
+                </div>
+                
                 <div class="chat-input-container">
                     <textarea id="player-input" placeholder="メッセージを入力..." disabled></textarea>
                     <button type="button" id="send-message" disabled>送信</button>
