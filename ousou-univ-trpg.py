@@ -85,6 +85,9 @@ def game_response():
     model_type = data.get('modelType', 'local')  # local, gemini-flash, gemini-pro, claude
     ollama_model = data.get('ollamaModel', '')  # 選択されたOllamaモデル
     
+    # フロントエンドから送信されたAPIキー
+    google_api_key = data.get('googleApiKey', '')
+    
     # Create prompt for the LLM based on the conversation history
     prompt = create_prompt(player_name, department, stats, player_message, conversation)
     
@@ -93,9 +96,9 @@ def game_response():
         # 選択されたOllamaモデルを使用
         game_master_response = get_ollama_response(prompt, ollama_model)
     elif model_type == 'gemini-flash':
-        game_master_response = get_gemini_response(prompt, "gemini-2.0-flash")
+        game_master_response = get_gemini_response(prompt, "gemini-2.0-flash", google_api_key)
     elif model_type == 'gemini-pro':
-        game_master_response = get_gemini_response(prompt, "gemini-2.0-pro-exp-02-05")
+        game_master_response = get_gemini_response(prompt, "gemini-2.0-pro-exp-02-05", google_api_key)
     elif model_type == 'claude':
         game_master_response = get_claude_response(prompt)
     else:
@@ -297,17 +300,23 @@ def get_ollama_response(prompt, model=None):
         print(f"Error with Ollama API: {e}")
         return "申し訳ありません、LLMとの通信に問題が発生しました。"
 
-def get_gemini_response(prompt, model_name="gemini-2.0-flash"):
+def get_gemini_response(prompt, model_name="gemini-2.0-flash", api_key=None):
     try:
-        if not GOOGLE_API_KEY:
-            return "Gemini API Key not configured."
+        # APIキーの優先順位: 引数 > 環境変数
+        used_api_key = api_key or GOOGLE_API_KEY
+        
+        if not used_api_key:
+            return "Gemini API Key not configured. Please provide an API key in the settings."
+        
+        # 使用するAPIキーで設定を更新
+        genai.configure(api_key=used_api_key)
         
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         print(f"Error with Gemini API: {e}")
-        return "申し訳ありません、LLMとの通信に問題が発生しました。"
+        return f"申し訳ありません、LLMとの通信に問題が発生しました: {str(e)}"
 
 def get_claude_response(prompt):
     try:
@@ -325,7 +334,7 @@ def get_claude_response(prompt):
             
             payload = {
                 "model": "claude-3-7-sonnet-20250219",
-                "max_tokens": 2000,
+                "max_tokens": 4000,
                 "messages": [
                     {
                         "role": "user",
@@ -371,7 +380,7 @@ def get_claude_response(prompt):
             
             payload = {
                 "model": "claude-3-7-sonnet-20250219",
-                "max_tokens": 2000,
+                "max_tokens": 4000,
                 "messages": [
                     {
                         "role": "user",

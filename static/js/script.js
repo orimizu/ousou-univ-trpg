@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessagesContainer = document.getElementById('chat-messages');
     const playerInputField = document.getElementById('player-input');
     const sendMessageButton = document.getElementById('send-message');
+    const apiKeyContainer = document.getElementById('api-key-container');
+    const googleApiKeyInput = document.getElementById('google-api-key');
+    const toggleKeyVisibilityBtn = document.getElementById('toggle-key-visibility');
     
     // セーブ/ロード要素
     const exportGameButton = document.getElementById('export-game');
@@ -36,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         conversation: [],
         loading: false,
         modelType: 'local',
-        ollamaModel: '' // 選択されたOllamaモデル
+        ollamaModel: '', // 選択されたOllamaモデル
+        googleApiKey: '' // 追加：Gemini API Key
     };
 
     // ページロード時にOllamaモデル一覧を取得
@@ -118,8 +122,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Localモデル選択時のみOllamaモデル選択を表示
         if (gameState.modelType === 'local') {
             ollamaModelContainer.style.display = 'flex';
+            apiKeyContainer.classList.add('hidden');
+        } else if (gameState.modelType === 'gemini-flash' || gameState.modelType === 'gemini-pro') {
+            // Geminiモデル選択時はAPIキー入力を表示
+            ollamaModelContainer.style.display = 'none';
+            apiKeyContainer.classList.remove('hidden');
+            
+            // ローカルストレージからAPIキーを復元
+            const savedApiKey = localStorage.getItem('geminiApiKey');
+            if (savedApiKey) {
+                googleApiKeyInput.value = savedApiKey;
+                gameState.googleApiKey = savedApiKey;
+            }
         } else {
             ollamaModelContainer.style.display = 'none';
+            apiKeyContainer.classList.add('hidden');
         }
         
         console.log('Model type changed to:', gameState.modelType);
@@ -131,11 +148,49 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Ollama model changed to:', gameState.ollamaModel);
     });
     
-    // 初期表示設定（ページロード時）
+    // APIキーの入力イベントリスナー
+    googleApiKeyInput.addEventListener('input', () => {
+        const apiKey = googleApiKeyInput.value.trim();
+        gameState.googleApiKey = apiKey;
+        
+        // APIキーをローカルストレージに保存
+        if (apiKey) {
+            localStorage.setItem('geminiApiKey', apiKey);
+        } else {
+            localStorage.removeItem('geminiApiKey');
+        }
+    });
+    
+    // APIキー表示/非表示の切り替え
+    toggleKeyVisibilityBtn.addEventListener('mousedown', () => {
+        googleApiKeyInput.type = 'text';
+    });
+    
+    toggleKeyVisibilityBtn.addEventListener('mouseup', () => {
+        googleApiKeyInput.type = 'password';
+    });
+    
+    toggleKeyVisibilityBtn.addEventListener('mouseleave', () => {
+        googleApiKeyInput.type = 'password';
+    });
+    
+    // 初期値の復元
+    const savedApiKey = localStorage.getItem('geminiApiKey');
+    if (savedApiKey) {
+        googleApiKeyInput.value = savedApiKey;
+        gameState.googleApiKey = savedApiKey;
+    }
+    
+    // 初期表示設定
     if (gameState.modelType === 'local') {
         ollamaModelContainer.style.display = 'flex';
+        apiKeyContainer.classList.add('hidden');
+    } else if (gameState.modelType === 'gemini-flash' || gameState.modelType === 'gemini-pro') {
+        apiKeyContainer.classList.remove('hidden');
+        ollamaModelContainer.style.display = 'none';
     } else {
         ollamaModelContainer.style.display = 'none';
+        apiKeyContainer.classList.add('hidden');
     }
 
     // コンソールにステータス初期値を出力して確認
@@ -346,13 +401,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // API Communication
     async function requestGameMasterResponse(playerMessage) {
         try {
-            console.log('Sending request to server with game state:', {
+            const requestBody = {
                 playerName: gameState.characterName,
                 department: gameState.department,
                 stats: gameState.stats,
                 playerMessage: playerMessage,
+                conversation: gameState.conversation,
                 modelType: gameState.modelType,
                 ollamaModel: gameState.ollamaModel
+            };
+            
+            // Geminiモデル使用時はAPIキーも送信
+            if ((gameState.modelType === 'gemini-flash' || gameState.modelType === 'gemini-pro') && gameState.googleApiKey) {
+                requestBody.googleApiKey = gameState.googleApiKey;
+            }
+            
+            console.log('Sending request to server with game state:', {
+                ...requestBody,
+                googleApiKey: requestBody.googleApiKey ? '***' : undefined // ログにAPIキーが出ないように
             });
             
             const response = await fetch('/api/game-response', {
@@ -360,15 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    playerName: gameState.characterName,
-                    department: gameState.department,
-                    stats: gameState.stats,
-                    playerMessage: playerMessage,
-                    conversation: gameState.conversation,
-                    modelType: gameState.modelType,
-                    ollamaModel: gameState.ollamaModel
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -571,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ollamaモデル選択の表示/非表示を更新
         if (gameState.modelType === 'local') {
             ollamaModelContainer.style.display = 'flex';
+            apiKeyContainer.classList.add('hidden');
             
             // インポートされたOllamaモデルの処理
             if (gameState.ollamaModel && gameState.ollamaModel.trim() !== '') {
@@ -596,8 +655,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 空のモデル名ならデフォルトを選択
                 ollamaModelSelect.value = '';
             }
+        } else if (gameState.modelType === 'gemini-flash' || gameState.modelType === 'gemini-pro') {
+            ollamaModelContainer.style.display = 'none';
+            apiKeyContainer.classList.remove('hidden');
+            
+            // ローカルストレージからAPIキーを復元
+            const savedApiKey = localStorage.getItem('geminiApiKey');
+            if (savedApiKey) {
+                googleApiKeyInput.value = savedApiKey;
+                gameState.googleApiKey = savedApiKey;
+            }
         } else {
             ollamaModelContainer.style.display = 'none';
+            apiKeyContainer.classList.add('hidden');
         }
         
         // 会話履歴をクリアして再構築

@@ -60,6 +60,13 @@
 - **Gemini**: 「gemini-2.0-flash」および「gemini-2.0-pro-exp-02-05」
 - **Claude**: 「claude-3-7-sonnet-20250219」
 
+#### 3.2.3 APIキー管理
+
+- **環境変数**: サーバーの環境変数でデフォルトのAPIキーを設定可能
+- **UI設定**: 環境変数に設定がない場合、UIからAPIキー設定が可能
+- **ローカルストレージ**: ブラウザのローカルストレージにAPIキーを保存（セキュアな利用）
+- **マスキング表示**: セキュリティのため、APIキーはマスク表示（目アイコンで一時的に表示可能）
+
 ### 3.3 セーブ/ロード機能
 
 - **セーブデータ形式**: JSON
@@ -98,6 +105,7 @@
 - **Gemini**: Google Gemini APIとの通信
   - `google.generativeai`ライブラリ使用
   - 指定されたモデル名で生成リクエスト
+  - APIキーは環境変数またはUIから受け取ったものを使用
 
 - **Claude**: Anthropic Claude APIとの通信
   - クライアントライブラリまたは直接APIリクエスト
@@ -121,6 +129,7 @@
 - **キャラクター作成画面**: 名前、学部選択、ステータス設定
 - **会話画面**: チャットインターフェース、メッセージ表示、入力欄
 - **モデル選択インターフェース**: LLMモデル切り替えUI
+- **APIキー設定インターフェース**: Geminiモデル選択時に表示されるパスワードフィールドと表示切替ボタン
 - **セーブ/ロード機能**: ボタンとファイル選択UI
 
 #### 4.2.2 スタイル設計 (styles.css)
@@ -133,6 +142,7 @@
   - メッセージバブル（プレイヤー/GM）
   - ステータス調整コントロール
   - 通知表示
+  - APIキー入力フォーム（マスキング機能付き）
 
 #### 4.2.3 スクリプト機能 (script.js)
 
@@ -142,6 +152,7 @@
 - **API通信**: サーバーとの非同期通信処理
 - **セーブ/ロード処理**: ゲームデータのJSON操作
 - **モデル選択**: LLMモデル切り替え、Ollamaモデル一覧取得
+- **APIキー管理**: 入力、保存、復元、表示切替機能
 
 ## 5. データモデル
 
@@ -167,7 +178,8 @@ gameState = {
     ],
     loading: boolean,            // 読み込み中フラグ
     modelType: string,           // 使用中のLLMタイプ
-    ollamaModel: string          // 選択されたOllamaモデル名
+    ollamaModel: string,         // 選択されたOllamaモデル名
+    googleApiKey: string         // Gemini API Key
 }
 ```
 
@@ -189,7 +201,8 @@ gameState = {
     playerMessage: string,       // プレイヤーからの最新メッセージ
     conversation: array,         // 会話履歴配列
     modelType: string,           // 使用するLLMタイプ
-    ollamaModel: string          // 選択されたOllamaモデル名（ローカルLLM使用時）
+    ollamaModel: string,         // 選択されたOllamaモデル名（ローカルLLM使用時）
+    googleApiKey: string         // Gemini APIキー（オプション、Geminiモデル使用時）
 }
 ```
 
@@ -229,6 +242,7 @@ gameState = {
 - **マルチプレイヤー**: 複数プレイヤーによる共同プレイ
 - **イベントシステム**: 事前定義されたイベントとランダムイベント
 - **UIテーマカスタマイズ**: 季節や状況に合わせた背景変更
+- **複数APIキー管理**: 他のLLMサービス向けにも同様のAPIキー管理機能を拡張
 
 ### 6.2 潜在的な改善点
 
@@ -236,6 +250,7 @@ gameState = {
 - **キャラクター画像生成**: AIによるキャラクターアバター生成
 - **音声インターフェース**: 音声入力と音声出力サポート
 - **データ分析ダッシュボード**: プレイ統計、選択傾向の可視化
+- **強化されたセキュリティ**: APIキー管理のセキュリティ向上
 
 ## 7. 開発・運用関連
 
@@ -251,7 +266,7 @@ gameState = {
 
 - `OLLAMA_BASE_URL`: Ollama APIのベースURL
 - `OLLAMA_MODEL`: デフォルトのOllamaモデル名
-- `GOOGLE_API_KEY`: Google Gemini APIキー
+- `GOOGLE_API_KEY`: Google Gemini APIキー（省略可、UIから設定可能）
 - `ANTHROPIC_API_KEY`: Anthropic Claude APIキー
 
 ### 7.3 デプロイメント
